@@ -1,0 +1,50 @@
+﻿@using MudBlazorAwsome.Shared.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject MudBlazor.ISnackbar Snackbar
+
+
+@page "/product/delete/{productId:int}"
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudPaper Class="pa-4">
+            <MudForm>
+                    <MudTextField T="string" Disabled=true Label="Product Name"  @bind-Value="product.Name" Required="true" RequiredError="Product Name is required!"/>
+                    <MudTextField T="int" Disabled=true Label="Product Price" @bind-Value="product.Price"  Required="true" RequiredError="Product Price is required!" />
+                    <MudTextField T="int" Disabled=true Label="Stock"  @bind-Value="product.Stock"  Required="true" RequiredError="Stock is required!" />
+                    <MudTextField T="int" Disabled=true Label="Sold" @bind-Value="product.Sold"  Required="true" RequiredError="Sold is required!" />
+            </MudForm>   
+        </MudPaper>
+        <MudPaper Class="pa-4 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" OnClick="(async () => await RemoveProduct(product.ProductId))">Validate</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Warning" DisableElevation="true" OnClick="Cancel" Class="mx-2">Reset</MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+@code {
+    [Parameter]
+    public int productId { get; set; }
+    protected string Title = "Add";
+    protected Product product = new();
+    protected override async Task OnParametersSetAsync()
+    {
+        if (productId != 0)
+        {
+            Title = "Edit";
+            product = await Http.GetFromJsonAsync<Product>("api/Product/" + productId);
+        }
+
+    }
+    public void Cancel() => NavigationManager.NavigateTo("/fetchproduct");
+    protected async Task RemoveProduct(int productId)
+    {
+        ShowSnack();
+        await Http.DeleteAsync("api/product/" + productId);
+        NavigationManager.NavigateTo("/fetchproduct");
+    }
+     private void ShowSnack()
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Add(product.Name+" has been deleted", Severity.Error);
+    }
+}

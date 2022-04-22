@@ -1,0 +1,86 @@
+﻿@page "/fetchproduct"
+@using MudBlazorAwsome.Shared.Models
+@inject NavigationManager NavigationManager
+
+@inject HttpClient Http
+@inject MudBlazor.ISnackbar Snackbar
+
+<PageTitle>List Of product</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">LIST OF PRODUCT</MudText> 
+<MudButton OnClick="AddProduct" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success">Add Product</MudButton>
+ <MudTextField @bind-Value="_searchString"  HelperText="@_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-20"></MudTextField>
+<MudScrollToTop>
+    <MudFab Color="Color.Tertiary" Icon="@Icons.Filled.ArrowCircleUp" />
+</MudScrollToTop>
+@if (products == null)
+{
+        <MudOverlay Visible="isVisible" DarkBackground="true" Absolute="true">
+            <MudProgressCircular Color="Color.Secondary" Indeterminate="true" />
+        </MudOverlay>
+}
+else
+{
+
+    <MudTable Items="products" Hover="true" SortLabel="Sort By" Elevation="0">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<Product, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Product, object>(x=>x.Price)">Price</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Product, object>(x=>x.Sold)">Sold</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Product, object>(x=>x.Stock!)">Stock</MudTableSortLabel></MudTh>
+            <MudTh> Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Price">@context.Price</MudTd>
+            <MudTd DataLabel="Sold. (F)">@context.Sold</MudTd>
+            <MudTd DataLabel="Stock">@context.Stock</MudTd>
+           <MudTd>
+              
+            <MudButton Href="@($"/product/edit/{@context.ProductId.ToString()}")" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" >Edit</MudButton>
+            <MudButton Href="@($"/product/delete/{@context.ProductId.ToString()}")" Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Delete">Remove</MudButton>
+           </MudTd>
+         </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{10, 20}" />
+        </PagerContent>
+    </MudTable>
+}
+
+
+@code {
+    private List<Product> products = new ();
+    private List<Product> searchproduct = new();
+    private string _searchString { get; set; } = string.Empty;
+    bool isVisible = true;
+    protected override async Task OnInitializedAsync()
+    {
+
+        await GetProduct();
+        Searching();
+    }
+    protected async Task GetProduct()
+    {
+        products = await Http.GetFromJsonAsync<List<Product>>("api/Product");
+        searchproduct = products;
+    }
+    public void AddProduct()
+    {
+        NavigationManager.NavigateTo("/product/add");
+    }
+    public void Searching()
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return;
+        products = searchproduct.Where(p => p.Name.IndexOf(_searchString, StringComparison.OrdinalIgnoreCase) != -1).ToList();
+    }
+    private Func<Product, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        if (x.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+}
