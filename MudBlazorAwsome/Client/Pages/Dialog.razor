@@ -1,0 +1,40 @@
+﻿@using MudBlazorAwsome.Shared.Models
+@inject MudBlazor.ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@ButtonIcon" Class="mr-3 mb-n1"/>
+            @ButtonText ?
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="@product.Name"  Label="Name" ReadOnly="isEditable"/>
+        <MudTextField @bind-Value="@product.Price"   Label="Price" ReadOnly="isEditable"/>
+        <MudTextField @bind-Value="@product.Sold" Label="Sold" ReadOnly="isEditable"/>
+        <MudTextField @bind-Value="@product.Stock" Label="Stock" ReadOnly="isEditable"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="ButtonColor" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" OnClick="DeleteProduct" >@ButtonText</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Product product { get; set; } = new Product();
+    [Parameter] public bool isEditable { get; set; } = false;
+    [Parameter] public string ButtonText { get; set; } = string.Empty;
+    [Parameter] public Color ButtonColor { get; set; } = Color.Primary;
+    [Parameter] public String ButtonIcon { get; set; } = Icons.Material.Filled.Edit;
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+    private void DeleteProduct()
+    {
+        //In a real world scenario this bool would probably be a service to delete the item from api/database
+        
+        MudDialog.Close(DialogResult.Ok(product.ProductId));
+    }
+}
+

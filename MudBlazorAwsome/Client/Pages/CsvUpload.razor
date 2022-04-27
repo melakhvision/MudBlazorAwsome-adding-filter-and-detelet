@@ -1,0 +1,131 @@
+﻿
+@page "/csvupload"
+@using System.IO
+@using CsvHelper
+@using CsvHelper.Configuration
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazorAwsome.Shared.Models
+@using System.Globalization
+@using System.Collections.Generic;
+@using System.Collections.ObjectModel;
+
+@inject IJSRuntime JSRuntime
+
+
+
+<InputFile id="fileInput" OnChange="UploadFiles" hidden multiple />
+
+<MudButton HtmlTag="label"
+           Class="mb-15"
+           Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Filled.CloudUpload"
+           for="fileInput">
+    Upload Files
+</MudButton>
+<MudSpacer />
+<MudSpacer />
+<MudText Class="mt-20" Typo="Typo.h3" GutterBottom="true" hidden="@isLoading" >STATE STATISTIC</MudText> 
+ <MudTextField  @bind-Value="_searchString" hidden="@isLoading" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-20"></MudTextField>
+    <MudTable Filter=@_quickFilter Items="products" Hover="true" SortLabel="Sort By" Elevation="0" hidden="@isLoading">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<Statistic, object>(x=>x.State)">State</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Statistic, object>(x=>x.IDYear)">IDYear</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Statistic, object>(x=>x.Population)">Population</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Statistic, object>(x=>x.SlugState)">SlugState</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Statistic, object>(x=>x.IDState)">IDState</MudTableSortLabel></MudTh>
+            <MudTh> Action</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="State">@context.State</MudTd>
+            <MudTd DataLabel="IDYear. (F)">@context.IDYear</MudTd>
+            <MudTd DataLabel="IDState">@context.Population</MudTd>
+            <MudTd DataLabel="Population">@context.SlugState</MudTd>
+            <MudTd DataLabel="SlugState">@context.IDState</MudTd>
+           <MudTd>
+            <MudButton  Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" >Edit</MudButton>
+            <MudButton OnClick="@((e) => DeleteStat(context))"  Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete">Remove</MudButton>
+           </MudTd>
+         </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{10, 20}" />
+        </PagerContent>
+    </MudTable>
+@code {
+    //loading file
+    private bool isLoading=true;
+    //hide editable content
+    private bool isHiddenHeader = true;
+    //disable/enable input
+    private bool IsEditable = true;
+
+    private Dictionary<IBrowserFile, List<Datarow>> Files = new Dictionary<IBrowserFile, List<Datarow>>();
+
+    private List<Foo> fileCurrent = new List<Foo>();
+    private List<Statistic> searchproduct = new();
+    public List<Statistic> products;
+    List<Foo> people = new List<Foo>();
+    private string _searchString { get; set; } = string.Empty;
+
+    private IBrowserFile browserFile;
+    string exceptionMessage;
+    ElementReference HeaderHolder;
+
+    private string headerLine = string.Empty;
+    private List<string> NewCols = new List<string>();
+    public class Foo
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+    protected override void OnInitialized()
+    {
+        products = new List<Statistic>();
+        people = new List<Foo>();
+        Searching();
+
+    }
+    public void Searching()
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return;
+        products = searchproduct.Where(p => p.State.IndexOf(_searchString, StringComparison.OrdinalIgnoreCase) != -1).ToList();
+    }
+    async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+
+        if(e.File == null)
+        {
+            isLoading = true;
+        }
+        else
+        {
+            isLoading = false;
+            var ms = new MemoryStream();
+            await e.File.OpenReadStream().CopyToAsync(ms);
+            ms.Seek(0, SeekOrigin.Begin);
+            var reader = new System.IO.StreamReader(ms);
+            var csvReader = new CsvReader(reader,CultureInfo.InvariantCulture);
+            var records = csvReader.GetRecords<Statistic>();
+            foreach (var item in records)
+            {
+                products.Add(item);
+            }
+            csvReader.Dispose();
+
+        }
+
+    }
+    public void DeleteStat(Statistic statistic)
+    {
+        products.Remove(statistic);
+    }
+    private Func<Statistic, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (x.State.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    };
+
+}
